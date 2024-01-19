@@ -55,4 +55,30 @@ class APIService{
 
   }
 
+  Future<Map<String, dynamic>> handShake() async{
+
+    try {
+      final response = await http.get(Uri.parse(
+          "http://toolbox.techexposys.com/api/handshake?"
+              "user_id=2"
+              "&toolbox_id=TES111")
+      );
+
+      if (response.statusCode == 200) {
+        final albumData = jsonDecode(response.body) as Map<String, dynamic>; // Cast to Map<String, dynamic>
+        error = false;
+        // print(albumData);
+        return albumData;
+      } else {
+        // Handle error based on response status code
+        throw Exception('API request failed with status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Handle network errors
+      // throw Exception('API request failed: $e');
+      return albums;
+    }
+
+  }
+
 }

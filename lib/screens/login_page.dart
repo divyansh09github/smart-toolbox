@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
                       hintText: 'Id',
                       hintStyle: const TextStyle(color: Colors.white), // Set hint text color
                       // prefixIconColor: Colors.white,
-                      prefixIcon: const Icon(Icons.email, color: Colors.white),
+                      prefixIcon: const Icon(Icons.perm_identity, color: Colors.white),
                       enabledBorder: OutlineInputBorder(
                         borderSide: const BorderSide(color: Color(0xFF6F43BF)), // Set border color when the field is not focused
                         borderRadius: BorderRadius.circular(10),
@@ -97,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(
-                    height: 20,
+                    height: 30,
                   ),
                   TextFormField(
                     // validator: (value) {
@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: const TextStyle(color: Colors.white), // Set input text color
                     obscureText: true,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.email, color: Colors.white),
+                      prefixIcon: const Icon(Icons.password, color: Colors.white),
                       hintStyle: const TextStyle(color: Colors.white), // Set hint text color
                       hintText: 'Password',
                       enabledBorder: OutlineInputBorder(
@@ -126,21 +126,21 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  CheckboxListTile(
-                    title: const Text("Remember me", style: TextStyle(color: Colors.white)),// Set the tile color to transparent
-                    checkColor: Colors.white,
-                    contentPadding: EdgeInsets.zero,
-                    value: rememberValue,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (newValue) {
-                      setState(() {
-                        rememberValue = newValue!;
-                      });
-                    },
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
+                  // CheckboxListTile(
+                  //   title: const Text("Remember me", style: TextStyle(color: Colors.white)),// Set the tile color to transparent
+                  //   checkColor: Colors.white,
+                  //   contentPadding: EdgeInsets.zero,
+                  //   value: rememberValue,
+                  //   activeColor: Theme.of(context).colorScheme.primary,
+                  //   onChanged: (newValue) {
+                  //     setState(() {
+                  //       rememberValue = newValue!;
+                  //     });
+                  //   },
+                  //   controlAffinity: ListTileControlAffinity.leading,
+                  // ),
                   const SizedBox(
-                    height: 20,
+                    height: 50,
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -162,27 +162,46 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(
                     height: 20,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Not registered yet?', style: TextStyle(color: Colors.white)),
-                      TextButton(
-                        onPressed: () {
-                          // Navigator.pushReplacement(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (context) =>
-                          //     const RegisterPage(title: 'Register UI'),
-                          //   ),
-                          // );
-                        },
-                        child: const Text('Create an account'),
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     const Text('Not registered yet?', style: TextStyle(color: Colors.white)),
+                  //     TextButton(
+                  //       onPressed: () {
+                  //         // Navigator.pushReplacement(
+                  //         //   context,
+                  //         //   MaterialPageRoute(
+                  //         //     builder: (context) =>
+                  //         //     const RegisterPage(title: 'Register UI'),
+                  //         //   ),
+                  //         // );
+                  //       },
+                  //       child: const Text('Create an account'),
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             )
+          ],
+        ),
+      ),
+      bottomSheet: Container(
+        // color: Colors.deepOrange,
+        decoration: const BoxDecoration(
+          color: Colors.black, // Your chosen color
+          borderRadius: BorderRadius.only(topRight: Radius.circular(12), topLeft: Radius.circular(12)), // Adjust radius
+        ),
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Text("Powered by", style: TextStyle(fontSize: 12, color: Colors.white,fontWeight: FontWeight.w400)),
+                Text(" Tech Exponent System", style: TextStyle(fontSize: 15, color: Colors.deepOrange,fontWeight: FontWeight.w800)),
+              ],
+            ),
           ],
         ),
       ),
