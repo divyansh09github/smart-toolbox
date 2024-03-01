@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:component/dataStorage/preference_manager.dart';
 import 'package:component/screens/login_page.dart';
@@ -16,7 +17,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
   Timer? _timer;
   bool? loggedIn;
 
-  bool online = true;
+  bool online = false;
+  String? onOfText;
 
   @override
   void initState() {
@@ -25,7 +27,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
     getLogin();
 
     _handShake();
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 90), (timer) {
       _handShake();
     });
 
@@ -34,7 +36,29 @@ class _ToolsScreenState extends State<ToolsScreen> {
     _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _apiCall();
     });
+
+    _toolsDetails();
   }
+
+  late List<Map<String, dynamic>> nameId;
+  late String toolboxId;
+  late String userName;
+  late String userId;
+  _toolsDetails() async{
+
+    List<Map<String, dynamic>> savedTools = await PreferencesManager.getTools();
+    String toolboxid = await PreferencesManager.getToolBoxId();
+    String usernm = await PreferencesManager.getUserName();
+    String userid = await PreferencesManager.getUserId();
+    setState(() {
+      nameId = savedTools;
+      toolboxId = toolboxid;
+      userName = usernm;
+      userId = userid;
+    });
+    print("tooldetails123: ${nameId[0]['tool_name']}");
+  }
+
 
   getLogin() async {
     bool val = await PreferencesManager.getLoggedIn();
@@ -53,53 +77,134 @@ class _ToolsScreenState extends State<ToolsScreen> {
   }
 
   List<bool> toolsStatus = [true, true, true, true, true];
-  List<String> toolAction = ['in', 'in', 'in', 'in', 'in'];
+  List<bool> toolAction = [true, true, true, true, true];
   String error = '';
 
   late Map<String, dynamic> fetchedData = {};
 
   _apiCall() async {
-    try {
-      final data = await APIService().fetch();
-      // print(data['tools_detail']['action']);
-      setState(() {
-        fetchedData = data;
-        error = '';
-      });
-    } catch (e) {
-      setState(() {
-        error = 'Failed to fetch symptoms: $e';
-      });
+
+    var response = await APIService().fetch();
+
+    if (response.statusCode != 200) {
+      var body = jsonDecode(response.body) as Map<String, dynamic>;
     }
+      else if (response.statusCode == 200) {
+
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+        setState(() {
+          fetchedData = body;
+        });
+        // print(fetchedData);
+        int act = fetchedData['data']['tools_detail'][0]['get_tool_id'] - 1;
+        setState(() {
+          // toolsStatus[0] = !toolsStatus[0];
+          toolAction[act] = fetchedData['data']['tools_detail'][0]['action'];
+        });
+
+      }
+
+    }
+
+    // try {
+    //   final data = await APIService().fetch();
+    //   // print(data['tools_detail']['action']);
+    //   setState(() {
+    //     fetchedData = data;
+    //     error = '';
+    //   });
+    // } catch (e) {
+    //   if(mounted){
+    //     setState(() {
+    //       error = 'Failed to fetch symptoms: $e';
+    //     });
+    //   }
+    //
+    // }
     // print(fetchedData);
     // print(fetchedData['data']['tools_detail'][0]['action']);
     // print(fetchedData['data']['tools_detail'][0]['get_tool_id']);
 
-    int act =
-        int.parse(fetchedData['data']['tools_detail'][0]['get_tool_id']) - 1;
-    setState(() {
-      // toolsStatus[0] = !toolsStatus[0];
-      toolAction[act] = fetchedData['data']['tools_detail'][0]['action'];
-    });
-  }
+    // int act =
+    //     int.parse(fetchedData['data']['tools_detail'][0]['get_tool_id']) - 1;
+    // setState(() {
+    //   // toolsStatus[0] = !toolsStatus[0];
+    //   toolAction[act] = fetchedData['data']['tools_detail'][0]['action'];
+    // });
+  // }
 
   late Map<String, dynamic> handShakeData = {};
 
   _handShake() async{
-    try{
-      final data = await APIService().handShake();
+    // try{
+    var response = await APIService().handShake();
+
+    if (response.statusCode != 200) {
+      var body = jsonDecode(response.body) as Map<String, dynamic>;
+
+      var snackDemo = SnackBar(
+        dismissDirection: DismissDirection.startToEnd,
+        padding: EdgeInsets.all(10),
+        content: Center(
+          child: Text(
+            "${response.statusCode}",
+            style: TextStyle(color: Color(0xFF972633)),
+          ),
+        ),
+        backgroundColor: Color(0xFFfedbd5),
+        // Or any other desired background color
+        elevation: 10,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 4),
+        margin: EdgeInsets.all(15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
+            bottomLeft: Radius.circular(15),
+            bottomRight: Radius.circular(
+                15), // Customize corner radius as needed
+          ),
+        ),
+      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(snackDemo);
+
+    }
+    else if (response.statusCode == 200) {
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
 
       setState(() {
-        handShakeData = data;
-        online = handShakeData['status'];
+        handShakeData = body;
+        online = body['status'];
       });
-    }
-    catch (e) {
-      setState(() {
-        error = 'Failed to fetch symptoms: $e';
-      });
-    }
 
+    }
+    //   print(data);
+    //   setState(() {
+    //     handShakeData = data;
+    //     online = bool.parse(data['status']);
+    //     // online = on;
+    //   });
+    // // }
+    // // catch (e) {
+    // //   setState(() {
+    // //     error = 'Failed to fetch symptoms: $e';
+    // //   });
+    // // }
+    // // if(online == true){
+    // //   onOfText = "Online";
+    // // }
+    // // else{
+    // //   onOfText = "Offline";
+    // // }
+    //
+    // // setState(() {
+    // //   online = true;
+    // // });
+    // print(online.runtimeType);
 
   }
 
@@ -110,26 +215,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: const ColorScheme(
-          primary: Colors.black,
-          primaryContainer: Color(0xFF002984),
-          secondary: Color(0xFFD32F2F),
-          secondaryContainer: Color(0xFF9A0007),
-          surface: Color(0xFFDEE2E6),
-          background: Color(0xFFF8F9FA),
-          error: Color(0xFF96031A),
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-          onSurface: Colors.black,
-          onBackground: Colors.black,
-          onError: Colors.white,
-          brightness: Brightness.light,
-        ),
-      ),
-      home: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           title: online ? Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -181,7 +267,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
             // Important: Remove any padding from the ListView.
             padding: EdgeInsets.zero,
             children: [
-              const SizedBox(
+              SizedBox(
                 height: 150,
                 child: DrawerHeader(
                   // decoration: BoxDecoration(
@@ -190,10 +276,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
+                      const SizedBox(
                         height: 30,
                       ),
-                      Text('Divyansh', style: TextStyle(fontSize: 22)),
+                      Text("$userName $userId", style: TextStyle(fontSize: 22)),
                     ],
                   ),
                 ),
@@ -256,245 +342,229 @@ class _ToolsScreenState extends State<ToolsScreen> {
         ),
 
         backgroundColor: Colors.black,
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        body: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // const Padding(
-            //   padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
-            //   child: Divider(color: Colors.white, thickness: 0.1, ),
-            // ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Container(
-                  decoration: const BoxDecoration(border: Border(right: BorderSide(width: 0.1,color: Colors.white))),
-                  child: GestureDetector(
-                    onTap: () {
-                      // Handle onTap event here
-                      setState(() {
-                        // toolsStatus[0] = !toolsStatus[0];
-                      });
-                      // _apiCall();
-                    },
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.40,
-                      width: MediaQuery.of(context).size.width * 0.49,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Container(
-                          child: toolAction[0] == 'in'
-                              ? Image.asset(
-                                  "assets/images/wrench_green.png",
-                                  fit: BoxFit.contain,
-                                )
-                              : Image.asset(
-                                  "assets/images/wrench_red.png",
-                                  fit: BoxFit.contain,
+
+            Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.45,
+                              width: MediaQuery.of(context).size.width * 0.25,
+                              child: Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Container(
+                                  child: toolAction[2]
+                                      ? Image.asset(
+                                    "assets/images/wrench_green.png",
+                                    fit: BoxFit.contain,
+                                  )
+                                      : Image.asset(
+                                    "assets/images/wrench_red.png",
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    // Handle onTap event here
-                    setState(() {
-                      // toolsStatus[1] = !toolsStatus[1];
-                    });
-                  },
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.40,
-                    width: MediaQuery.of(context).size.width * 0.49,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        child: toolAction[1] == 'in'
-                            ? Image.asset(
-                                "assets/images/piler_green.png",
-                                fit: BoxFit.contain,
-                              )
-                            : Image.asset(
-                                "assets/images/piler_red.png",
-                                fit: BoxFit.contain,
                               ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    // Handle onTap event here
-                    setState(() {
-                      // toolsStatus[2] = !toolsStatus[2];
-                    });
-                  },
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.40,
-                    width: MediaQuery.of(context).size.width * 0.33,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Container(
-                        child: toolAction[2] == 'in'
-                            ? Image.asset(
-                                "assets/images/wrench_green.png",
-                                fit: BoxFit.contain,
-                              )
-                            : Image.asset(
-                                "assets/images/wrench_red.png",
-                                fit: BoxFit.contain,
+                            ),
+                           RotatedBox(
+                            // angle: 90,
+                            quarterTurns: 1,
+                            child: Text(
+                              "${nameId[0]['tool_name']} - ${nameId[0]['tool_id']}",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
+                          )
+                        ],
                       ),
-                    ),
-                  ),
-                ),
-                Container(
-                  decoration: const BoxDecoration(border: Border(right: BorderSide(width: 0.4,color: Colors.white), left: BorderSide(width: 0.4,color: Colors.white),),),
-                  child: GestureDetector(
-                    onTap: () {
-                      // Handle onTap event here
-                      setState(() {
-                        // toolsStatus[3] = !toolsStatus[3];
-                      });
-                    },
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.40,
-                      width: MediaQuery.of(context).size.width * 0.33,
-                      child: Padding(
-                        padding: const EdgeInsets.all(45.0),
-                        child: Container(
-                          child: toolAction[3] == 'in'
-                              ? Image.asset(
-                                  "assets/images/bolt_green.png",
-                                  fit: BoxFit.contain,
-                                )
-                              : Image.asset(
-                                  "assets/images/bolt_red.png",
-                                  fit: BoxFit.contain,
+
+                      Row(
+                        children: [
+                          SizedBox(
+                                height: MediaQuery.of(context).size.height * 0.45,
+                                width: MediaQuery.of(context).size.width * 0.25,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(25.0),
+                                  child: Container(
+                                    child: toolAction[1]
+                                        ? Image.asset(
+                                      "assets/images/bolt_green.png",
+                                      fit: BoxFit.contain,
+                                    )
+                                        : Image.asset(
+                                      "assets/images/bolt_red.png",
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
                                 ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    // Handle onTap event here
-                    setState(() {
-                      // toolsStatus[4] = !toolsStatus[4];
-                    });
-                  },
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.40,
-                    width: MediaQuery.of(context).size.width * 0.33,
-                    child: Padding(
-                      padding: const EdgeInsets.all(25.0),
-                      child: Container(
-                        child: toolAction[4] == 'in'
-                            ? Image.asset(
-                                "assets/images/wrench_green.png",
-                                fit: BoxFit.contain,
-                              )
-                            : Image.asset(
-                                "assets/images/wrench_red.png",
-                                fit: BoxFit.contain,
                               ),
+                          RotatedBox(
+                            // angle: 90,
+                            quarterTurns: 1,
+                            child: Text(
+                              "${nameId[1]['tool_name']} - ${nameId[1]['tool_id']}",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+
+                      Row(
+                        children: [
+                          SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.45,
+                              width: MediaQuery.of(context).size.width * 0.25,
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: Container(
+                                  child: toolAction[0]
+                                      ? Image.asset(
+                                    "assets/images/wrench_green.png",
+                                    fit: BoxFit.contain,
+                                  )
+                                      : Image.asset(
+                                    "assets/images/wrench_red.png",
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          RotatedBox(
+                            // angle: 90,
+                            quarterTurns: 1,
+                            child: Text(
+                              "${nameId[2]['tool_name']} - ${nameId[2]['tool_id']}",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.45,
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Container(
+                                  child: toolAction[4]
+                                      ? Image.asset(
+                                          "assets/images/wrench_green.png",
+                                          fit: BoxFit.contain,
+                                        )
+                                      : Image.asset(
+                                          "assets/images/wrench_red.png",
+                                          fit: BoxFit.contain,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          RotatedBox(
+                            // angle: 90,
+                            quarterTurns: 1,
+                            child: Text(
+                              "${nameId[3]['tool_name']} - ${nameId[3]['tool_id']}",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+
+                      Row(
+                        children: [
+                          SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.45,
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Container(
+                                  child: toolAction[3]
+                                      ? Image.asset(
+                                          "assets/images/piler_green.png",
+                                          fit: BoxFit.contain,
+                                        )
+                                      : Image.asset(
+                                          "assets/images/piler_red.png",
+                                          fit: BoxFit.contain,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          RotatedBox(
+                            // angle: 90,
+                            quarterTurns: 1,
+                            child: Text(
+                              "${nameId[4]['tool_name']} - ${nameId[4]['tool_id']}",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+
+                    ],
+                  ),
+
+                ],
+              ),
+            ),
+            Container(
+              width: MediaQuery.of(context).size.width * 0.07,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  RotatedBox(
+                    // angle: 90,
+                    quarterTurns: 1,
+                    child: Text(
+                      "$toolboxId",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-              ],
+                  )
+                ],
+              ),
             ),
-            // const Padding(
-            //   padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
-            //   child: Divider(color: Colors.white, thickness: 0.1, ),
-            // ),
+
           ],
         ),
-        // bottomNavigationBar: BottomAppBar(
-        //   height: MediaQuery.of(context).size.height * 0.06,
-        //   color: Colors.black,
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //     children: [
-        //       // other buttons
-        //       IconButton(
-        //         icon: const Icon(Icons.menu_rounded,
-        //             color: Colors.white), // Replace with "3 dost" icon
-        //         onPressed: () => showModalBottomSheet(
-        //           backgroundColor: Colors.black,
-        //           context: context,
-        //           builder: (context) => Padding(
-        //             padding: const EdgeInsets.all(20),
-        //             child: Column(
-        //               mainAxisSize: MainAxisSize.min,
-        //               children: [
-        //                 const Text('Options',
-        //                     style: TextStyle(color: Colors.white)),
-        //                 const Divider(),
-        //                 ListTile(
-        //                   leading: const Icon(Icons.file_download, color: Colors.white), // Leading icon
-        //                   title: const Text('Report',
-        //                       style: TextStyle(color: Colors.white)),
-        //
-        //                   onTap: () {
-        //                     // Handle report action
-        //                     // Navigator.pop(context); // Close bottom sheet
-        //                   },
-        //                 ),
-        //                 ListTile(
-        //                   leading: const Icon(Icons.logout_rounded, color: Colors.white), // Leading icon
-        //                   title: const Text('Sign Out',
-        //                       style: TextStyle(color: Colors.white)),
-        //                   onTap: () {
-        //                     // Handle sign out action
-        //                     // Navigator.pop(context); // Close bottom sheet
-        //                     _signoutHandle();
-        //                   },
-        //                 ),
-        //               ],
-        //             ),
-        //           ),
-        //         ),
-        //       ),
-        //       online ? Row(
-        //         children: [
-        //           const Padding(
-        //             padding: EdgeInsets.symmetric(horizontal: 6),
-        //             child: Text("Online", style: TextStyle(color: Colors.green, fontSize: 16),),
-        //           ),
-        //           Container(
-        //             width: 10,
-        //             height: 10,
-        //             decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: Colors.green),
-        //             // color: Colors.red,
-        //           ),
-        //
-        //         ],
-        //       ) : Row(
-        //         children: [
-        //           const Padding(
-        //             padding: EdgeInsets.symmetric(horizontal: 6),
-        //             child: Text("Offline", style: TextStyle(color: Colors.red, fontSize: 16),),
-        //           ),
-        //           Container(
-        //             width: 10,
-        //             height: 10,
-        //             decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: Colors.red),
-        //             // color: Colors.red,
-        //           ),
-        //
-        //         ],
-        //       ),
-        //     ],
-        //   ),
-        // ),
-      ),
-    );
+
+      );
   }
 }

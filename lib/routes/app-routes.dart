@@ -1,4 +1,3 @@
-import 'package:component/screens/comp.dart';
 import 'package:component/screens/login_page.dart';
 import 'package:component/screens/tool_screen.dart';
 import 'package:flutter/cupertino.dart';

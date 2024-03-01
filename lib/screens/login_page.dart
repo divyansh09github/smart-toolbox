@@ -1,6 +1,9 @@
 // import 'package:email_validator/email_validator.dart';
+import 'dart:convert';
+
 import 'package:component/dataStorage/preference_manager.dart';
 import 'package:component/screens/tool_screen.dart';
+import 'package:component/services/post_api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,33 +17,118 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
 
-  // bool? loggedIn;
-  //
-  // @override
-  // void initState(){
-  //   super.initState();
-  //
-  //   getLogin();
-  //
-  // }
-  //
-  // getLogin() async{
-  //   bool val = await PreferencesManager.getLoggedIn();
-  //   if(val){
-  //     _navigateForward();
-  //   }
-  //
-  // }
+  bool? loggedIn;
 
-  _loginFunction() async {
+  @override
+  void initState(){
+    super.initState();
 
-    await PreferencesManager.setLoggedIn(true);
-    _navigateForward();
+    getLogin();
 
   }
 
-  _navigateForward(){
+  getLogin() async{
+    bool val = await PreferencesManager.getLoggedIn();
+    if(val){
+      _navigateForward();
+    }
+
+  }
+
+  final TextEditingController idController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  late Map<String, dynamic> loginData = {};
+
+  _loginFunction() async {
+
+    String id = idController.text;
+    String password = passwordController.text;
+
+    var response = await APIService().login(id, password);
+
+    if (response.statusCode != 200) {
+      var body = jsonDecode(response.body);
+
+      if(response.statusCode == 401){
+        print("401");
+        var snackDemo = const SnackBar(
+          dismissDirection: DismissDirection.startToEnd,
+          padding: EdgeInsets.all(10),
+          content: Center(
+            child: Text(
+              "Invalid Username or Password",
+              style: TextStyle(color: Color(0xFF972633)),
+            ),
+          ),
+          backgroundColor: Color(0xFFfedbd5),
+          // Or any other desired background color
+          elevation: 10,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+          margin: EdgeInsets.all(15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+              bottomLeft: Radius.circular(15),
+              bottomRight: Radius.circular(
+                  15), // Customize corner radius as needed
+            ),
+          ),
+        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(snackDemo);
+      }
+
+    }
+    else if (response.statusCode == 200){
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+      // print("200");
+      // print(body);
+      setState(() {
+        loginData = body;
+      });
+      // print("abc : $loginData");
+      bool success = loginData['success'];
+      String userId = loginData['user_id'];
+      String userName = loginData['user_name'];
+      String toolBoxId = loginData['toolbox_id'];
+      String toolBoxName = loginData['toolbox_name'];
+      List<Map<String, dynamic>> tools = [
+        {"tool_id": loginData['tools_details'][0]['tool_id'], "tool_name": loginData['tools_details'][0]['tool_name']},
+        {"tool_id": loginData['tools_details'][1]['tool_id'], "tool_name": loginData['tools_details'][1]['tool_name']},
+        {"tool_id": loginData['tools_details'][2]['tool_id'], "tool_name": loginData['tools_details'][2]['tool_name']},
+        {"tool_id": loginData['tools_details'][3]['tool_id'], "tool_name": loginData['tools_details'][3]['tool_name']},
+        {"tool_id": loginData['tools_details'][4]['tool_id'], "tool_name": loginData['tools_details'][4]['tool_name']}
+      ];
+      // print(userid.runtimeType);
+      if(success)
+      {
+        await PreferencesManager.setUserId(userId);
+        await PreferencesManager.setUserName(userName);
+        await PreferencesManager.setToolBoxId(toolBoxId);
+        await PreferencesManager.setToolBoxName(toolBoxName);
+        await PreferencesManager.saveTools(tools);
+        await PreferencesManager.setLoggedIn(true);
+
+        _navigateForward();
+      }
+      // else{
+      //   await PreferencesManager.setLoggedIn(success);
+      // }
+      // await PreferencesManager.setLoggedIn(true);
+      // _navigateForward();
+
+    }
+
+  }
+
+  _navigateForward() async {
     Navigator.pushReplacement( context, MaterialPageRoute(builder: (context) =>const ToolsScreen(),),);
+    // List<Map<String, dynamic>> savedTools = await PreferencesManager.getTools();
+    // print("tooldetails11: ${savedTools}");
   }
 
   final _formKey = GlobalKey<FormState>();
@@ -56,25 +144,29 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
+
             const Text(
               'Log in',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color:Color(0xFF6F43BF) ,
+                color:Colors.deepOrange ,
                 fontSize: 40,
               ),
             ),
             const SizedBox(
               height: 60,
             ),
+
             Form(
               key: _formKey,
               child: Column(
                 children: [
+
                   TextFormField(
                     // validator: (value) => EmailValidator.validate(value!)
                     //     ? null
                     //     : "Please enter a valid email",
+                    controller: idController,
                     maxLines: 1,
                     style: const TextStyle(color: Colors.white), // Set input text color
                     decoration: InputDecoration(
@@ -84,11 +176,11 @@ class _LoginPageState extends State<LoginPage> {
                       // prefixIconColor: Colors.white,
                       prefixIcon: const Icon(Icons.perm_identity, color: Colors.white),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: Color(0xFF6F43BF)), // Set border color when the field is not focused
+                        borderSide: const BorderSide(color: Colors.deepOrange), // Set border color when the field is not focused
                         borderRadius: BorderRadius.circular(10),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: Color(0xFF6F43BF)), // Set border color when the field is focused
+                        borderSide: const BorderSide(color: Colors.deepOrange), // Set border color when the field is focused
                         borderRadius: BorderRadius.circular(10),
                       ),
                       border: OutlineInputBorder(
@@ -106,6 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                     //   }
                     //   return null;
                     // },
+                    controller: passwordController,
                     maxLines: 1,
                     style: const TextStyle(color: Colors.white), // Set input text color
                     obscureText: true,
@@ -114,11 +207,11 @@ class _LoginPageState extends State<LoginPage> {
                       hintStyle: const TextStyle(color: Colors.white), // Set hint text color
                       hintText: 'Password',
                       enabledBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: Color(0xFF6F43BF)), // Set border color when the field is not focused
+                        borderSide: const BorderSide(color: Colors.deepOrange), // Set border color when the field is not focused
                         borderRadius: BorderRadius.circular(10),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: Color(0xFF6F43BF)), // Set border color when the field is focused
+                        borderSide: const BorderSide(color: Colors.deepOrange), // Set border color when the field is focused
                         borderRadius: BorderRadius.circular(10),
                       ),
                       border: OutlineInputBorder(
@@ -155,7 +248,7 @@ class _LoginPageState extends State<LoginPage> {
                       'Log in',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16
+                        fontSize: 16,color: Colors.deepOrange
                       ),
                     ),
                   ),
@@ -186,6 +279,7 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
       ),
+
       bottomSheet: Container(
         // color: Colors.deepOrange,
         decoration: const BoxDecoration(
